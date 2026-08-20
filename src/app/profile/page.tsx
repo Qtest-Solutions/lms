@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Card } from "@/components/ui/card";
@@ -20,10 +20,11 @@ export default function ProfilePage() {
   const [form, setForm] = useState({ name: me?.name ?? "", email: me?.email ?? "" });
   const [saved, setSaved] = useState(false);
 
-  if (!me) {
-    router.replace("/login");
-    return null;
-  }
+  useEffect(() => {
+    if (!me) router.replace("/login");
+  }, [me, router]);
+
+  if (!me) return null;
 
   const save = async () => {
     try {
