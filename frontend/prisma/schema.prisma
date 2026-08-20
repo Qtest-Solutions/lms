@@ -1,0 +1,235 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT @map("student")
+  TEACHER @map("teacher")
+  ADMIN   @map("admin")
+}
+
+enum SessionType {
+  ONE_TO_ONE @map("one-to-one")
+  BATCH      @map("batch")
+}
+
+enum SessionStatus {
+  SCHEDULED @map("scheduled")
+  ACTIVE    @map("active")
+  COMPLETED @map("completed")
+  CANCELLED @map("cancelled")
+}
+
+enum SubmissionStatus {
+  SUBMITTED @map("submitted")
+  VERIFIED  @map("verified")
+  RETURNED  @map("returned")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(STUDENT)
+  createdAt DateTime @default(now())
+
+  assignedTeacherId String?
+  assignedTeacher   User?  @relation("StudentTeacher", fields: [assignedTeacherId], references: [id], onDelete: SetNull)
+  assignedStudents  User[] @relation("StudentTeacher")
+
+  batches         Batch[]        @relation("BatchStudents")
+  taughtBatches   Batch[]        @relation("BatchTeacher")
+  sessions        LiveSession[]  @relation("SessionStudents")
+  taughtSessions  LiveSession[]  @relation("SessionTeacher")
+  recordings      Recording[]    @relation("RecordingStudents")
+  certificates    Certificate[]
+  progress        LessonProgress[] @relation("StudentProgress")
+  quizAttempts    QuizAttempt[]  @relation("StudentQuizAttempts")
+  assignments     Assignment[]   @relation("AssignmentCreator")
+  submissions     AssignmentSubmission[] @relation("StudentSubmissions")
+  verifiedSubmissions AssignmentSubmission[] @relation("SubmissionVerifier")
+}
+
+model Course {
+  id           String        @id @default(uuid())
+  title        String
+  code         String        @unique
+  description  String        @default("")
+  sections     Section[]
+  batches      Batch[]
+  sessions     LiveSession[]
+  certificates Certificate[]
+  questions    Question[]
+  quizAttempts QuizAttempt[]
+  assignments  Assignment[]
+}
+
+model Section {
+  id       String   @id @default(uuid())
+  courseId String
+  title    String
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons  Lesson[]
+}
+
+model Lesson {
+  id        String  @id @default(uuid())
+  sectionId String
+  title     String
+  type      String
+  content   String
+  section   Section @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  progress  LessonProgress[]
+}
+
+model Batch {
+  id        String   @id @default(uuid())
+  name      String
+  teacherId String
+  courseId  String
+  teacher   User     @relation("BatchTeacher", fields: [teacherId], references: [id])
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  students  User[]   @relation("BatchStudents")
+
+  sessions LiveSession[]
+}
+
+model LiveSession {
+  id          String        @id @default(uuid())
+  title       String
+  teacherId   String
+  batchId     String?
+  courseId    String
+  scheduledAt DateTime
+  duration    Int
+  type        SessionType   @default(ONE_TO_ONE)
+  status      SessionStatus @default(SCHEDULED)
+
+  teacher   User     @relation("SessionTeacher", fields: [teacherId], references: [id])
+  batch     Batch?   @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  students  User[]   @relation("SessionStudents")
+  recording Recording?
+}
+
+model Recording {
+  id        String   @id @default(uuid())
+  sessionId String   @unique
+  title     String
+  url       String
+  duration  Int
+  createdAt DateTime @default(now())
+
+  session  LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  students User[]      @relation("RecordingStudents")
+}
+
+model Certificate {
+  id        String    @id @default(uuid())
+  studentId String
+  courseId  String
+  templateId String?
+  issuedAt  DateTime  @default(now())
+  publicId  String    @unique
+
+  student  User                 @relation(fields: [studentId], references: [id])
+  course   Course               @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  template CertificateTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+}
+
+model CertificateTemplate {
+  id           String   @id @default(uuid())
+  name         String
+  description  String   @default("")
+  width        Float    @default(841.89)
+  height       Float    @default(595.28)
+  background      String   @default("#FFFFFF")
+  backgroundImage String?
+  borderStyle     String   @default("solid")
+  borderWidth  Float    @default(3)
+  borderColor  String   @default("#000000")
+  elements     Json     @default("[]")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  certificates Certificate[]
+}
+
+model LessonProgress {
+  id          String   @id @default(uuid())
+  studentId   String
+  lessonId    String
+  completedAt DateTime @default(now())
+
+  student User   @relation("StudentProgress", fields: [studentId], references: [id], onDelete: Cascade)
+  lesson  Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, lessonId])
+}
+
+model Question {
+  id           String   @id @default(uuid())
+  courseId     String
+  question     String
+  options      String
+  correctIndex Int
+  explanation  String   @default("")
+  createdBy    String?
+  createdAt    DateTime @default(now())
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+}
+
+model QuizAttempt {
+  id        String   @id @default(uuid())
+  studentId String
+  courseId  String
+  score     Int
+  total     Int
+  answers   String   @default("[]")
+  createdAt DateTime @default(now())
+
+  student User   @relation("StudentQuizAttempts", fields: [studentId], references: [id], onDelete: Cascade)
+  course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+}
+
+model Assignment {
+  id          String    @id @default(uuid())
+  courseId    String
+  title       String
+  description String
+  points      Int       @default(10)
+  dueAt       DateTime?
+  createdBy   String
+  createdAt   DateTime  @default(now())
+
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  creator     User      @relation("AssignmentCreator", fields: [createdBy], references: [id])
+  submissions AssignmentSubmission[]
+}
+
+model AssignmentSubmission {
+  id           String           @id @default(uuid())
+  assignmentId String
+  studentId    String
+  content      String
+  attachmentUrl String?
+  status       SubmissionStatus @default(SUBMITTED)
+  score        Int?
+  feedback     String?
+  submittedAt  DateTime         @default(now())
+  verifiedBy   String?
+  verifiedAt   DateTime?
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student    User       @relation("StudentSubmissions", fields: [studentId], references: [id], onDelete: Cascade)
+  verifier   User?      @relation("SubmissionVerifier", fields: [verifiedBy], references: [id])
+
+  @@unique([assignmentId, studentId])
+}
