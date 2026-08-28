@@ -11,18 +11,12 @@ import { http } from "@/lib/api";
 interface Session {
   id: string;
   title: string;
-  scheduledAt: string;
+  startTime: string;
+  endTime: string;
   status: string;
   type: string;
   joinUrl: string;
 }
-
-const statusTone: Record<string, "soft" | "success" | "secondary" | "error"> = {
-  SCHEDULED: "soft",
-  ACTIVE: "success",
-  COMPLETED: "secondary",
-  CANCELLED: "error",
-};
 
 export default function LiveClasses() {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -36,10 +30,9 @@ export default function LiveClasses() {
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="font-headline-md text-primary mb-1">Live Classes</h1>
-            <p className="text-body-sm text-on-surface-variant">Join your next class right on time.</p>
+            <h1 className="font-headline-md text-primary mb-1">Online Classes</h1>
+            <p className="text-body-sm text-on-surface-variant">Join your scheduled classes anytime.</p>
           </div>
-          <Button variant="secondary">Schedule a class</Button>
         </div>
         <div className="space-y-3">
           {sessions.map((s) => (
@@ -47,18 +40,20 @@ export default function LiveClasses() {
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <h3 className="font-headline-md text-sm text-primary">{s.title}</h3>
-                  <Badge variant={statusTone[s.status] ?? "soft"} size="sm">{s.status}</Badge>
                   <Badge variant="secondary" size="sm">{s.type}</Badge>
                 </div>
-                <p className="text-body-sm text-on-surface-variant">{new Date(s.scheduledAt).toLocaleString()}</p>
+                <p className="text-body-sm text-on-surface-variant">
+                  {s.startTime && s.endTime ? `${s.startTime} – ${s.endTime}` : "No time set"}
+                </p>
               </div>
-              {(s.status === "SCHEDULED" || s.status === "ACTIVE") && (
+              {s.joinUrl && (
                 <Link href={`/dashboard/live/${s.id}`}>
                   <Button>Join class</Button>
                 </Link>
               )}
             </Card>
           ))}
+          {sessions.length === 0 && <p className="text-body-sm text-on-surface-variant">No classes yet.</p>}
         </div>
       </div>
     </StudentShell>

@@ -106,7 +106,9 @@ model LiveSession {
   teacherId   String
   batchId     String?
   courseId    String
-  scheduledAt DateTime
+  scheduledAt DateTime?
+  startTime   String?
+  endTime     String?
   duration    Int
   type        SessionType   @default(ONE_TO_ONE)
   status      SessionStatus @default(SCHEDULED)

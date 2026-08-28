@@ -3,7 +3,7 @@ import { IconZap, IconBookOpen, IconTrendingUp, IconAward, IconPlay, IconCheckCi
 
 const features = [
   { icon: IconBookOpen, title: "Structured Courses", description: "Well-organized modules with guided 1-to-1 teaching and clear progression." },
-  { icon: IconPlay, title: "Live Lessons", description: "Interactive live classes with recordings you can review any time." },
+  { icon: IconPlay, title: "Online Classes", description: "Interactive live classes with recordings you can review any time." },
   { icon: IconTrendingUp, title: "Smart Progress", description: "Track completion and lesson history at a glance for every course." },
   { icon: IconAward, title: "Earn Certificates", description: "Get credentialed for completing courses and showcase your achievement." },
 ];
@@ -49,7 +49,7 @@ export default function LandingPage() {
             <span className="text-on-surface-variant">one-on-one</span>
           </h1>
           <p className="text-lg md:text-xl text-on-surface-variant max-w-xl mx-auto mb-8 leading-relaxed">
-            A learning platform built for 1-to-1 and small-batch teaching. Track progress, attend live classes, earn certificates, and stay motivated.
+            A learning platform built for 1-to-1 and small-batch teaching. Track progress, attend online classes, earn certificates, and stay motivated.
           </p>
           <div className="flex items-center justify-center gap-3">
             <Link
@@ -75,7 +75,7 @@ export default function LandingPage() {
           {[
             { value: "1-to-1", label: "Focused Teaching" },
             { value: "10+", label: "Courses" },
-            { value: "Live", label: "Classes & Recordings" },
+            { value: "Live", label: "Online Classes" },
             { value: "Cert", label: "Certificates Earned" },
           ].map((stat) => (
             <div key={stat.label} className="text-center">

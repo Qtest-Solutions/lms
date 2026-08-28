@@ -52,7 +52,7 @@ export default function StudentDashboard() {
   useEffect(() => {
     const studentId = me?.id;
     const jobs: Promise<void>[] = [
-      http.get<Course[]>("/courses").then(setCourses),
+      http.get<Course[]>(studentId ? `/courses?studentId=${studentId}` : "/courses").then(setCourses),
       http.get<Session[]>("/live-sessions").then((s) => setSessions(s.filter((x) => x.status === "SCHEDULED" || x.status === "ACTIVE"))),
       http.get<Recording[]>("/recordings").then(setRecordings),
     ];
@@ -114,7 +114,7 @@ export default function StudentDashboard() {
                     <IconCalendar size={22} className="text-primary" />
                   </div>
                   <div>
-                    <Badge variant="success" size="sm" className="mb-1.5">Upcoming live class</Badge>
+                    <Badge variant="success" size="sm" className="mb-1.5">Upcoming class</Badge>
                     <h3 className="font-headline-md text-sm text-primary">{upcoming.title}</h3>
                     <p className="text-body-sm text-on-surface-variant">
                       {new Date(upcoming.scheduledAt).toLocaleString()} · {upcoming.type}

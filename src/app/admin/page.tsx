@@ -18,7 +18,7 @@ export default function AdminDashboard() {
     Promise.all([
       http.get("/students"),
       http.get("/teachers"),
-      http.get("/courses"),
+      http.get("/courses?hasStudents=true"),
       http.get("/live-sessions"),
     ])
       .then(([s, t, c, se]) => {
@@ -31,7 +31,7 @@ export default function AdminDashboard() {
     { label: "Students", value: students.length, icon: IconUsers, tint: "bg-primary/5", tone: "text-primary" },
     { label: "Teachers", value: teachers.length, icon: IconUser, tint: "bg-secondary-container/40", tone: "text-secondary" },
     { label: "Courses", value: courses.length, icon: IconBookOpen, tint: "bg-sky-tint/50", tone: "text-primary" },
-    { label: "Live sessions", value: sessions.length, icon: IconCalendar, tint: "bg-soft-peach/30", tone: "text-primary" },
+    { label: "Online classes", value: sessions.length, icon: IconCalendar, tint: "bg-soft-peach/30", tone: "text-primary" },
   ];
 
   return (
@@ -75,7 +75,7 @@ export default function AdminDashboard() {
           </Card>
           <Card>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-headline-md text-sm text-primary">Recent live sessions</h3>
+              <h3 className="font-headline-md text-sm text-primary">Recent online classes</h3>
               <Link href="/admin/courses" className="text-body-sm font-semibold text-primary hover:underline inline-flex items-center gap-1">
                 Manage <IconChevronRight size={14} />
               </Link>
@@ -90,6 +90,25 @@ export default function AdminDashboard() {
             </div>
           </Card>
         </div>
+
+        {courses.length > 0 && (
+          <Card>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-headline-md text-sm text-primary">Courses with students</h3>
+              <Link href="/admin/courses" className="text-body-sm font-semibold text-primary hover:underline inline-flex items-center gap-1">
+                Manage <IconChevronRight size={14} />
+              </Link>
+            </div>
+            <div className="divide-y divide-outline-variant/40">
+              {courses.map((c) => (
+                <div key={c.id} className="flex items-center justify-between py-2.5">
+                  <span className="text-body-sm text-on-surface truncate">{c.title}</span>
+                  <span className="font-label-caps text-on-surface-variant shrink-0 ml-2">{c.studentCount ?? 0} students</span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
       </div>
     </AdminShell>
   );

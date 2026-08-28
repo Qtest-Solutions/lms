@@ -94,7 +94,7 @@ export const http = {
   get: <T = any>(path: string) => api<T>(path),
   post: <T = any>(path: string, body: unknown) => api<T>(path, { method: "POST", body: JSON.stringify(body) }),
   put: <T = any>(path: string, body: unknown) => api<T>(path, { method: "PUT", body: JSON.stringify(body) }),
-  del: <T = any>(path: string) => api<T>(path, { method: "DELETE" }),
+  del: <T = any>(path: string, body?: unknown) => api<T>(path, { method: "DELETE", ...(body ? { body: JSON.stringify(body) } : {}) }),
 };
 
 export interface UploadResult {

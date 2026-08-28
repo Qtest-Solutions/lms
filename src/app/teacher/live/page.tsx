@@ -16,7 +16,8 @@ import { errMessage } from "@/lib/utils";
 interface Session {
   id: string;
   title: string;
-  scheduledAt: string;
+  startTime: string;
+  endTime: string;
   status: string;
   type: string;
   courseId?: string;
@@ -28,7 +29,7 @@ export default function TeacherLive() {
   const toast = useToast();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [batches, setBatches] = useState<{ id: string; name: string }[]>([]);
-  const [form, setForm] = useState({ title: "", courseId: "", batchId: "", scheduledAt: "" });
+  const [form, setForm] = useState({ title: "", courseId: "", batchId: "", startTime: "", endTime: "" });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState<Session | null>(null);
 
@@ -40,7 +41,7 @@ export default function TeacherLive() {
   useEffect(load, [me]);
 
   const resetForm = () => {
-    setForm({ title: "", courseId: "", batchId: "", scheduledAt: "" });
+    setForm({ title: "", courseId: "", batchId: "", startTime: "", endTime: "" });
     setEditingId(null);
   };
 
@@ -56,14 +57,14 @@ export default function TeacherLive() {
     if (editingId) {
       try {
         await http.put(`/live-sessions/${editingId}`, payload);
-        toast.success("Class rescheduled");
+        toast.success("Class updated");
       } catch (err) {
         toast.error(errMessage(err));
       }
     } else {
       try {
         await http.post("/live-sessions", payload);
-        toast.success("Class scheduled");
+        toast.success("Class created");
       } catch (err) {
         toast.error(errMessage(err));
       }
@@ -78,7 +79,8 @@ export default function TeacherLive() {
       title: s.title,
       courseId: s.courseId ?? "",
       batchId: s.batchId ?? "",
-      scheduledAt: s.scheduledAt.slice(0, 16),
+      startTime: s.startTime ?? "",
+      endTime: s.endTime ?? "",
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -99,8 +101,8 @@ export default function TeacherLive() {
     <TeacherShell>
       <div className="max-w-4xl mx-auto space-y-8">
         <div>
-          <h1 className="font-headline-md text-primary mb-1">Live Classes</h1>
-          <p className="text-body-sm text-on-surface-variant">Schedule, reschedule, and manage your live classes.</p>
+          <h1 className="font-headline-md text-primary mb-1">Online Classes</h1>
+          <p className="text-body-sm text-on-surface-variant">Create and manage your online classes.</p>
         </div>
 
         <Card className="p-6">
@@ -109,7 +111,7 @@ export default function TeacherLive() {
               <IconCalendar size={18} className="text-secondary" />
             </div>
             <h2 className="font-headline-md text-sm text-primary">
-              {editingId ? "Reschedule class" : "Schedule a class"}
+              {editingId ? "Edit class" : "Create a class"}
             </h2>
           </div>
           <form onSubmit={upsertSession} className="space-y-3">
@@ -123,10 +125,19 @@ export default function TeacherLive() {
                 <option value="">1-to-1 (individual)</option>
                 {batches.map((b) => <option key={b.id} value={b.id}>{b.name} (batch)</option>)}
               </select>
-              <Input type="datetime-local" value={form.scheduledAt} onChange={(e) => setForm({ ...form, scheduledAt: e.target.value })} className="p-3" required />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="font-label-caps text-on-surface-variant mb-1.5 block">Class time</label>
+                <div className="flex items-center gap-2">
+                  <Input type="time" value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })} className="p-3" required />
+                  <span className="text-on-surface-variant">to</span>
+                  <Input type="time" value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} className="p-3" required />
+                </div>
+              </div>
             </div>
             <div className="flex gap-3">
-              <Button type="submit">{editingId ? "Save changes" : "Schedule class"}</Button>
+              <Button type="submit">{editingId ? "Save changes" : "Create class"}</Button>
               {editingId && (
                 <Button variant="ghost" type="button" onClick={resetForm}>Cancel edit</Button>
               )}
@@ -139,7 +150,9 @@ export default function TeacherLive() {
             <Card key={s.id} className="flex items-center justify-between gap-3 p-4">
               <div className="min-w-0">
                 <h3 className="font-medium text-on-surface text-sm">{s.title}</h3>
-                <p className="text-label-caps text-on-surface-variant">{new Date(s.scheduledAt).toLocaleString()} · {s.type}</p>
+                <p className="text-label-caps text-on-surface-variant">
+                  {s.startTime && s.endTime ? `${s.startTime} – ${s.endTime}` : "No time set"} · {s.type}
+                </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <Badge variant={s.status === "SCHEDULED" ? "soft" : "secondary"} size="sm">{s.status}</Badge>
@@ -148,7 +161,7 @@ export default function TeacherLive() {
                     <Link href={`/teacher/live/${s.id}`}>
                       <Button size="sm"><IconVideo size={16} /> Start</Button>
                     </Link>
-                    <Button variant="ghost" size="sm" onClick={() => startEdit(s)} aria-label={`Reschedule ${s.title}`}>
+                    <Button variant="ghost" size="sm" onClick={() => startEdit(s)} aria-label={`Edit ${s.title}`}>
                       <IconEdit size={16} />
                     </Button>
                     <Button variant="ghost" size="sm" onClick={() => setCancelling(s)} aria-label={`Cancel ${s.title}`}>
@@ -159,7 +172,7 @@ export default function TeacherLive() {
               </div>
             </Card>
           ))}
-          {sessions.length === 0 && <p className="text-body-sm text-on-surface-variant">No classes scheduled yet.</p>}
+          {sessions.length === 0 && <p className="text-body-sm text-on-surface-variant">No classes yet.</p>}
         </div>
       </div>
 

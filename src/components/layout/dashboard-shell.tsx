@@ -69,7 +69,7 @@ const SHELLS: Record<string, ShellConfig> = {
         items: [
           { href: "/dashboard", label: "Dashboard", icon: IconHome },
           { href: "/dashboard/courses", label: "My Courses", icon: IconBookOpen },
-          { href: "/dashboard/live", label: "Live Classes", icon: IconCalendar },
+          { href: "/dashboard/live", label: "Online Classes", icon: IconCalendar },
           { href: "/dashboard/recordings", label: "Recordings", icon: IconVideo },
           { href: "/dashboard/certificates", label: "Certificates", icon: IconAward },
         ],
@@ -90,7 +90,7 @@ const SHELLS: Record<string, ShellConfig> = {
           { href: "/teacher", label: "Dashboard", icon: IconHome },
           { href: "/teacher/students", label: "Students", icon: IconUsers },
           { href: "/teacher/batches", label: "Batches", icon: IconGrid },
-          { href: "/teacher/live", label: "Live Classes", icon: IconCalendar },
+          { href: "/teacher/live", label: "Online Classes", icon: IconCalendar },
           { href: "/teacher/assignments", label: "Assignments", icon: IconFileCheck },
           { href: "/teacher/questions", label: "Questions", icon: IconHelpCircle },
         ],

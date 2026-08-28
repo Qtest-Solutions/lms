@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { IconGrid, IconPlus, IconEdit2 as IconEdit, IconTrash2 as IconTrash } from "@/lib/icons";
+import { IconGrid, IconPlus, IconEdit2 as IconEdit, IconTrash2 as IconTrash, IconUsers, IconX } from "@/lib/icons";
 import { http } from "@/lib/api";
 import { useToast } from "@/lib/toast-context";
 import { errMessage } from "@/lib/utils";
@@ -20,7 +20,13 @@ interface Batch {
   courseId: string;
   teacher?: { id: string; name: string };
   course?: { id: string; title: string };
-  students?: { id: string }[];
+  students?: { id: string; name: string; email: string }[];
+}
+
+interface Student {
+  id: string;
+  name: string;
+  email: string;
 }
 
 export default function AdminBatches() {
@@ -32,6 +38,12 @@ export default function AdminBatches() {
   const [editing, setEditing] = useState<Batch | null>(null);
   const [editForm, setEditForm] = useState({ name: "", teacherId: "", courseId: "" });
   const [deleting, setDeleting] = useState<Batch | null>(null);
+
+  const [managingStudents, setManagingStudents] = useState<Batch | null>(null);
+  const [assignedStudents, setAssignedStudents] = useState<Student[]>([]);
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
+  const [selectedStudentId, setSelectedStudentId] = useState("");
+  const [loadingStudents, setLoadingStudents] = useState(false);
 
   const load = () => {
     http.get("/batches").then(setBatches).catch(console.error);
@@ -80,6 +92,49 @@ export default function AdminBatches() {
     load();
   };
 
+  const openManageStudents = async (b: Batch) => {
+    setManagingStudents(b);
+    setLoadingStudents(true);
+    try {
+      const [batchData, all] = await Promise.all([
+        http.get<Batch>(`/batches/${b.id}`),
+        http.get<Student[]>("/students"),
+      ]);
+      setAssignedStudents(batchData.students ?? []);
+      setAllStudents(all);
+    } catch (err) {
+      console.error(err);
+    }
+    setLoadingStudents(false);
+  };
+
+  const addStudent = async () => {
+    if (!managingStudents || !selectedStudentId) return;
+    try {
+      await http.post(`/batches/${managingStudents.id}/students`, { studentId: selectedStudentId });
+      toast.success("Student added");
+      const updated = await http.get<Batch>(`/batches/${managingStudents.id}`);
+      setAssignedStudents(updated.students ?? []);
+      setSelectedStudentId("");
+    } catch (err) {
+      toast.error(errMessage(err));
+    }
+  };
+
+  const removeStudent = async (studentId: string) => {
+    if (!managingStudents) return;
+    try {
+      await http.del(`/batches/${managingStudents.id}/students`, { studentId });
+      toast.success("Student removed");
+      const updated = await http.get<Batch>(`/batches/${managingStudents.id}`);
+      setAssignedStudents(updated.students ?? []);
+    } catch (err) {
+      toast.error(errMessage(err));
+    }
+  };
+
+  const unassignedStudents = allStudents.filter((s) => !assignedStudents.some((a) => a.id === s.id));
+
   const selectClass =
     "w-full px-4 py-2.5 bg-surface-container-low text-on-surface rounded-[var(--radius-lg)] border border-outline-variant outline-none transition-all duration-200 focus:border-primary focus:ring-1 focus:ring-primary text-body-sm";
 
@@ -127,6 +182,9 @@ export default function AdminBatches() {
                 </p>
               </div>
               <Badge variant="soft" size="sm">{b.students?.length ?? 0} students</Badge>
+              <Button variant="secondary" size="sm" onClick={() => openManageStudents(b)}>
+                <IconUsers size={15} /> Students
+              </Button>
               <Button variant="ghost" size="sm" onClick={() => openEdit(b)} aria-label={`Edit ${b.name}`}>
                 <IconEdit size={16} />
               </Button>
@@ -168,6 +226,46 @@ export default function AdminBatches() {
             <Button onClick={saveEdit}>Save changes</Button>
           </div>
         </div>
+      </Modal>
+
+      <Modal open={!!managingStudents} onClose={() => setManagingStudents(null)} title={`Manage students — ${managingStudents?.name}`}>
+        {loadingStudents ? (
+          <p className="text-body-sm text-on-surface-variant py-4">Loading…</p>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <select
+                value={selectedStudentId}
+                onChange={(e) => setSelectedStudentId(e.target.value)}
+                className="flex-1 px-4 py-2.5 bg-surface-container-low text-on-surface rounded-[var(--radius-lg)] border border-outline-variant outline-none text-body-sm"
+              >
+                <option value="">Select student…</option>
+                {unassignedStudents.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name} ({s.email})</option>
+                ))}
+              </select>
+              <Button onClick={addStudent} disabled={!selectedStudentId}>Add</Button>
+            </div>
+
+            {assignedStudents.length === 0 ? (
+              <p className="text-body-sm text-on-surface-variant py-2">No students in this batch yet.</p>
+            ) : (
+              <div className="divide-y divide-outline-variant/40">
+                {assignedStudents.map((s) => (
+                  <div key={s.id} className="flex items-center justify-between py-2.5">
+                    <div>
+                      <p className="text-body-sm text-on-surface">{s.name}</p>
+                      <p className="text-label-caps text-on-surface-variant">{s.email}</p>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => removeStudent(s.id)}>
+                      <IconX size={16} className="text-error" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </Modal>
 
       <ConfirmDialog

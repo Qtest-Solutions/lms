@@ -6,7 +6,7 @@ import { StudentShell } from "@/components/layout/dashboard-shell";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { IconBookOpen, IconChevronRight } from "@/lib/icons";
-import { http } from "@/lib/api";
+import { http, getMe } from "@/lib/api";
 
 interface Course {
   id: string;
@@ -17,11 +17,13 @@ interface Course {
 }
 
 export default function MyCourses() {
+  const me = getMe();
   const [courses, setCourses] = useState<Course[]>([]);
 
   useEffect(() => {
-    http.get<Course[]>("/courses").then(setCourses).catch(console.error);
-  }, []);
+    if (!me?.id) return;
+    http.get<Course[]>(`/courses?studentId=${me.id}`).then(setCourses).catch(console.error);
+  }, [me?.id]);
 
   return (
     <StudentShell>

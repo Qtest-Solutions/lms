@@ -18,6 +18,17 @@ interface Lesson {
   content: string;
 }
 
+function parseContent(content: string, type: string): Array<{ type: string; content: string }> {
+  if (type === "assignment") return [{ type: "text", content }];
+  try {
+    const parsed = JSON.parse(content);
+    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].type) return parsed;
+  } catch { /* legacy */ }
+  if (type === "video") return [{ type: "video", content }];
+  if (type === "image") return [{ type: "image", content }];
+  return [{ type: "text", content }];
+}
+
 interface Section {
   title: string;
   lessons: Lesson[];
@@ -98,6 +109,8 @@ export default function LessonPlayer() {
             <Badge variant="soft" size="sm">Lesson {idx + 1} of {all.length}</Badge>
             {lesson.type === "assignment" && <Badge variant="secondary" size="sm">Assignment</Badge>}
             {lesson.type === "video" && <Badge variant="info" size="sm">Video lesson</Badge>}
+            {lesson.type === "image" && <Badge variant="info" size="sm">Image</Badge>}
+            {lesson.type === "mixed" && <Badge variant="soft" size="sm">Mixed content</Badge>}
             {lesson.type === "text" && <Badge variant="soft" size="sm">Reading</Badge>}
             {completed && (
               <Badge variant="success" size="sm">
@@ -118,19 +131,29 @@ export default function LessonPlayer() {
           )}
 
           <Card className="mb-6 overflow-hidden p-0">
-            {lesson.type === "video" ? (
-              <div className="aspect-video bg-black">
-                <iframe
-                  src={lesson.content}
-                  className="w-full h-full"
-                  allow="autoplay; encrypted-media; picture-in-picture"
-                  allowFullScreen
-                  title={lesson.title}
-                />
+            {parseContent(lesson.content, lesson.type).map((block, i) => (
+              <div key={i}>
+                {block.type === "video" && (
+                  <div className="aspect-video bg-black">
+                    <iframe
+                      src={block.content}
+                      className="w-full h-full"
+                      allow="autoplay; encrypted-media; picture-in-picture"
+                      allowFullScreen
+                      title={lesson.title}
+                    />
+                  </div>
+                )}
+                {block.type === "image" && (
+                  <div className="flex justify-center bg-surface-container-low">
+                    <img src={block.content} alt={lesson.title} className="max-h-[70vh] w-full object-contain" />
+                  </div>
+                )}
+                {block.type === "text" && (
+                  <div className="p-6 text-on-surface leading-relaxed whitespace-pre-wrap">{block.content}</div>
+                )}
               </div>
-            ) : (
-              <div className="p-6 text-on-surface leading-relaxed whitespace-pre-wrap">{lesson.content}</div>
-            )}
+            ))}
           </Card>
 
           <div className="flex items-center justify-between gap-3">

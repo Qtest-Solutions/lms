@@ -16,10 +16,14 @@ import {
   IconPlay,
   IconListChecks,
   IconFileText,
+  IconImage,
+  IconChevronUp,
+  IconChevronDown,
   IconEdit2 as IconEdit,
   IconTrash2 as IconTrash,
+  IconUpload,
 } from "@/lib/icons";
-import { http } from "@/lib/api";
+import { http, uploadFile } from "@/lib/api";
 import { useToast } from "@/lib/toast-context";
 import { errMessage } from "@/lib/utils";
 import { QuestionPoolManager } from "@/components/admin/question-pool";
@@ -45,17 +49,19 @@ interface Course {
   sections: Section[];
 }
 
-const LESSON_TYPES = ["video", "text", "assignment"] as const;
-
 const lessonIcon: Record<string, typeof IconPlay> = {
   video: IconPlay,
   text: IconListChecks,
+  image: IconImage,
+  mixed: IconBookOpen,
   assignment: IconFileText,
 };
 
 const typeVariant: Record<string, "info" | "soft" | "secondary"> = {
   video: "info",
   text: "soft",
+  image: "info",
+  mixed: "soft",
   assignment: "secondary",
 };
 
@@ -74,7 +80,39 @@ type DeleteState =
   | { kind: "lesson"; section: Section; lesson: Lesson }
   | null;
 
-const emptyLessonForm = { title: "", type: "text" as string, content: "" };
+type ContentBlock = { id: string; type: "video" | "text" | "image"; content: string };
+
+type LessonForm = { title: string; isAssignment: boolean; blocks: ContentBlock[] };
+
+let blockId = 0;
+const newBlock = (type: ContentBlock["type"]): ContentBlock => ({ id: `b${++blockId}`, type, content: "" });
+const emptyLessonForm: LessonForm = { title: "", isAssignment: false, blocks: [] };
+
+function parseBlocks(content: string, type: string): ContentBlock[] {
+  if (type === "assignment") return [newBlock("text")];
+  try {
+    const parsed = JSON.parse(content);
+    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].type) {
+      return parsed.map((b: { type: string; content: string }) => ({ id: `b${++blockId}`, type: b.type as ContentBlock["type"], content: b.content || "" }));
+    }
+  } catch { /* legacy */ }
+  if (type === "video") return [newBlock("video")];
+  if (type === "image") return [newBlock("image")];
+  return [newBlock("text")];
+}
+
+function buildPayload(form: LessonForm): { content: string; type: string } {
+  if (form.isAssignment) {
+    const text = form.blocks.find((b) => b.type === "text")?.content || "";
+    return { content: text, type: "assignment" };
+  }
+  const blocks = form.blocks
+    .filter((b) => b.content.trim())
+    .map((b) => ({ type: b.type, content: b.content }));
+  if (blocks.length === 0) return { content: "", type: "text" };
+  if (blocks.length === 1) return { content: blocks[0].content, type: blocks[0].type };
+  return { content: JSON.stringify(blocks), type: "mixed" };
+}
 
 export default function AdminCourseContent() {
   const { id } = useParams();
@@ -85,6 +123,7 @@ export default function AdminCourseContent() {
   const [sectionTitle, setSectionTitle] = useState("");
   const [lessonModal, setLessonModal] = useState<LessonModalState>(null);
   const [lessonForm, setLessonForm] = useState(emptyLessonForm);
+  const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState<DeleteState>(null);
 
   const load = () => http.get<Course>(`/courses/${id}`).then(setCourse).catch(console.error);
@@ -131,19 +170,24 @@ export default function AdminCourseContent() {
   };
 
   const openEditLesson = (section: Section, lesson: Lesson) => {
-    setLessonForm({ title: lesson.title, type: lesson.type, content: lesson.content });
+    setLessonForm({
+      title: lesson.title,
+      isAssignment: lesson.type === "assignment",
+      blocks: parseBlocks(lesson.content, lesson.type),
+    });
     setLessonModal({ kind: "edit-lesson", section, lesson });
   };
 
   const saveLesson = async () => {
     if (!lessonModal) return;
     if (!lessonForm.title.trim()) return;
+    const payload = { ...buildPayload(lessonForm), title: lessonForm.title };
     try {
       if (lessonModal.kind === "edit-lesson") {
-        await http.put(`/lessons/${lessonModal.lesson.id}`, lessonForm);
+        await http.put(`/lessons/${lessonModal.lesson.id}`, payload);
         toast.success("Lesson updated");
       } else {
-        await http.post("/lessons", { sectionId: lessonModal.section.id, ...lessonForm });
+        await http.post("/lessons", { sectionId: lessonModal.section.id, ...payload });
         toast.success("Lesson added");
       }
     } catch (err) {
@@ -151,6 +195,25 @@ export default function AdminCourseContent() {
     }
     setLessonModal(null);
     load();
+  };
+
+  const uploadImage = async (e: React.ChangeEvent<HTMLInputElement>, blockId: string) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploading(true);
+    try {
+      const { publicUrl } = await uploadFile(file, "lessons");
+      setLessonForm({
+        ...lessonForm,
+        blocks: lessonForm.blocks.map((b) => (b.id === blockId ? { ...b, content: publicUrl } : b)),
+      });
+      toast.success("Image uploaded");
+    } catch (err) {
+      toast.error(errMessage(err));
+    } finally {
+      setUploading(false);
+    }
   };
 
   const confirmDelete = async () => {
@@ -168,6 +231,46 @@ export default function AdminCourseContent() {
     }
     setDeleting(null);
     load();
+  };
+
+  const addBlock = (type: ContentBlock["type"]) => {
+    setLessonForm({ ...lessonForm, blocks: [...lessonForm.blocks, newBlock(type)] });
+  };
+
+  const removeBlock = (blockId: string) => {
+    setLessonForm({ ...lessonForm, blocks: lessonForm.blocks.filter((b) => b.id !== blockId) });
+  };
+
+  const moveBlock = (blockId: string, dir: -1 | 1) => {
+    const blocks = [...lessonForm.blocks];
+    const idx = blocks.findIndex((b) => b.id === blockId);
+    const target = idx + dir;
+    if (target < 0 || target >= blocks.length) return;
+    [blocks[idx], blocks[target]] = [blocks[target], blocks[idx]];
+    setLessonForm({ ...lessonForm, blocks });
+  };
+
+  const updateBlock = (blockId: string, content: string) => {
+    setLessonForm({
+      ...lessonForm,
+      blocks: lessonForm.blocks.map((b) => (b.id === blockId ? { ...b, content } : b)),
+    });
+  };
+
+const lessonPreview = (lesson: { type: string; content: string }) => {
+    try {
+      const parsed = JSON.parse(lesson.content);
+      if (Array.isArray(parsed)) {
+        return parsed.map((b: { type: string; content: string }) => {
+          if (b.type === "video") return "(video)";
+          if (b.type === "image") return "(image)";
+          return b.content?.slice(0, 40);
+        }).filter(Boolean).join(" + ");
+      }
+    } catch { /* legacy */ }
+    if (lesson.type === "video") return "(video)";
+    if (lesson.type === "image") return "(image)";
+    return lesson.content?.slice(0, 60) || "(no content)";
   };
 
   const deleteMessage =
@@ -234,7 +337,7 @@ export default function AdminCourseContent() {
                           </div>
                           <div className="min-w-0">
                             <p className="font-medium text-on-surface text-sm truncate">{li + 1}. {lesson.title}</p>
-                            <p className="text-label-caps text-on-surface-variant mt-0.5 truncate">{lesson.content}</p>
+                            <p className="text-label-caps text-on-surface-variant mt-0.5 truncate">{lessonPreview(lesson)}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
@@ -290,7 +393,7 @@ export default function AdminCourseContent() {
         open={!!lessonModal}
         onClose={() => setLessonModal(null)}
         title={lessonModal?.kind === "edit-lesson" ? "Edit lesson" : "Add lesson"}
-        maxWidth="max-w-lg"
+        maxWidth="max-w-xl"
       >
         <div className="space-y-3">
           <Input
@@ -300,49 +403,117 @@ export default function AdminCourseContent() {
             placeholder="e.g. Forces & Newton's Laws"
             autoFocus
           />
-          <div>
-            <label className="font-label-caps text-on-surface-variant">Type</label>
-            <div className="mt-1.5 flex gap-2">
-              {LESSON_TYPES.map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setLessonForm({ ...lessonForm, type: t })}
-                  className={`px-4 py-2 rounded-[var(--radius-md)] border text-body-sm font-medium capitalize transition-colors cursor-pointer ${
-                    lessonForm.type === t
-                      ? "bg-primary text-on-primary border-primary"
-                      : "bg-surface-container-low text-on-surface-variant border-outline-variant hover:bg-surface-container-high"
-                  }`}
-                >
-                  {t}
-                </button>
+
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={lessonForm.isAssignment}
+              onChange={(e) => setLessonForm({ ...lessonForm, isAssignment: e.target.checked })}
+              className="w-4 h-4 rounded border-outline-variant accent-primary"
+            />
+            <span className="text-body-sm text-on-surface">Mark as assignment</span>
+          </label>
+
+          {!lessonForm.isAssignment && (
+            <div className="space-y-2">
+              <label className="font-label-caps text-on-surface-variant">Content blocks</label>
+              {lessonForm.blocks.length === 0 && (
+                <p className="text-body-xs text-on-surface-variant/70">No blocks yet — add one below.</p>
+              )}
+              {lessonForm.blocks.map((block, idx) => (
+                <div key={block.id} className="rounded-[var(--radius-lg)] border border-outline-variant bg-surface-container-low p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      {block.type === "video" && <span className="text-xs font-semibold text-primary uppercase tracking-wide">Video</span>}
+                      {block.type === "image" && <span className="text-xs font-semibold text-primary uppercase tracking-wide">Image</span>}
+                      {block.type === "text" && <span className="text-xs font-semibold text-primary uppercase tracking-wide">Text</span>}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button type="button" onClick={() => moveBlock(block.id, -1)} disabled={idx === 0} className="p-1 text-on-surface-variant hover:text-primary disabled:opacity-30 cursor-pointer disabled:cursor-default" aria-label="Move up">
+                        <IconChevronUp size={14} />
+                      </button>
+                      <button type="button" onClick={() => moveBlock(block.id, 1)} disabled={idx === lessonForm.blocks.length - 1} className="p-1 text-on-surface-variant hover:text-primary disabled:opacity-30 cursor-pointer disabled:cursor-default" aria-label="Move down">
+                        <IconChevronDown size={14} />
+                      </button>
+                      <button type="button" onClick={() => removeBlock(block.id)} className="p-1 text-on-surface-variant hover:text-error cursor-pointer" aria-label="Remove block">
+                        <IconTrash size={14} />
+                      </button>
+                    </div>
+                  </div>
+                  {block.type === "video" && (
+                    <Input
+                      value={block.content}
+                      onChange={(e) => updateBlock(block.id, e.target.value)}
+                      placeholder="https://www.youtube.com/embed/…"
+                    />
+                  )}
+                  {block.type === "image" && (
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <Input
+                          value={block.content}
+                          onChange={(e) => updateBlock(block.id, e.target.value)}
+                          placeholder="Paste an image URL or upload…"
+                        />
+                        <label className="shrink-0 inline-flex items-center justify-center gap-1.5 px-4 rounded-[var(--radius-md)] bg-surface-container border border-outline-variant text-body-sm font-medium text-on-surface-variant cursor-pointer hover:bg-surface-container-high transition-colors">
+                          {uploading ? "…" : <><IconUpload size={15} /> Upload</>}
+                          <input type="file" accept="image/*" className="hidden" onChange={(e) => uploadImage(e, block.id)} disabled={uploading} />
+                        </label>
+                      </div>
+                      {block.content && (
+                        <img src={block.content} alt="" className="max-h-32 w-full object-contain rounded border border-outline-variant bg-surface" />
+                      )}
+                    </div>
+                  )}
+                  {block.type === "text" && (
+                    <textarea
+                      value={block.content}
+                      onChange={(e) => updateBlock(block.id, e.target.value)}
+                      rows={3}
+                      placeholder="Lesson text or description…"
+                      className="w-full px-3 py-2 bg-surface text-on-surface rounded-[var(--radius-md)] border border-outline-variant outline-none text-body-sm resize-none focus:border-primary focus:ring-1 focus:ring-primary"
+                    />
+                  )}
+                </div>
               ))}
+              <div className="flex gap-2">
+                <button type="button" onClick={() => addBlock("video")} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-md)] bg-surface-container-low border border-outline-variant text-xs font-medium text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer">
+                  <IconPlay size={13} /> Video
+                </button>
+                <button type="button" onClick={() => addBlock("image")} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-md)] bg-surface-container-low border border-outline-variant text-xs font-medium text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer">
+                  <IconImage size={13} /> Image
+                </button>
+                <button type="button" onClick={() => addBlock("text")} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-md)] bg-surface-container-low border border-outline-variant text-xs font-medium text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer">
+                  <IconListChecks size={13} /> Text
+                </button>
+              </div>
             </div>
-          </div>
-          <div>
-            <label className="font-label-caps text-on-surface-variant">
-              {lessonForm.type === "video" ? "Video URL" : "Content"}
-            </label>
-            {lessonForm.type === "video" ? (
-              <Input
-                value={lessonForm.content}
-                onChange={(e) => setLessonForm({ ...lessonForm, content: e.target.value })}
-                placeholder="https://www.youtube.com/embed/…"
-                className="mt-1.5"
-              />
-            ) : (
+          )}
+
+          {lessonForm.isAssignment && (
+            <div>
+              <label className="font-label-caps text-on-surface-variant">Assignment description</label>
               <textarea
-                value={lessonForm.content}
-                onChange={(e) => setLessonForm({ ...lessonForm, content: e.target.value })}
+                value={lessonForm.blocks[0]?.content || ""}
+                onChange={(e) => {
+                  const blocks = lessonForm.blocks.length > 0
+                    ? lessonForm.blocks.map((b, i) => (i === 0 ? { ...b, content: e.target.value } : b))
+                    : [{ ...newBlock("text"), content: e.target.value }];
+                  setLessonForm({ ...lessonForm, blocks });
+                }}
                 rows={4}
-                placeholder="Lesson text, instructions, or assignment description…"
-                className="mt-1.5 w-full px-4 py-2.5 bg-surface-container-low text-on-surface rounded-[var(--radius-lg)] border border-outline-variant outline-none transition-all duration-200 placeholder:text-on-surface-variant/50 focus:border-primary focus:ring-1 focus:ring-primary text-body-sm resize-none"
+                placeholder="Describe the assignment task…"
+                className="mt-1.5 w-full px-4 py-2.5 bg-surface-container-low text-on-surface rounded-[var(--radius-lg)] border border-outline-variant outline-none text-body-sm resize-none focus:border-primary focus:ring-1 focus:ring-primary"
               />
-            )}
-          </div>
+            </div>
+          )}
+
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="ghost" onClick={() => setLessonModal(null)}>Cancel</Button>
-            <Button onClick={saveLesson} disabled={!lessonForm.title.trim()}>
+            <Button
+              onClick={saveLesson}
+              disabled={!lessonForm.title.trim() || (!lessonForm.isAssignment && lessonForm.blocks.every((b) => !b.content.trim()))}
+            >
               {lessonModal?.kind === "edit-lesson" ? "Save changes" : "Add lesson"}
             </Button>
           </div>

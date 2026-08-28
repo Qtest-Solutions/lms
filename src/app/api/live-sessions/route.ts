@@ -18,7 +18,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { title, teacherId, studentId, batchId, courseId, scheduledAt, duration, type } = body ?? {};
+  const { title, teacherId, studentId, batchId, courseId, startTime, endTime, duration, type } = body ?? {};
 
   const studentIds: string[] = [];
   if (studentId) {
@@ -37,7 +37,8 @@ export async function POST(req: Request) {
       teacherId,
       batchId: batchId ?? null,
       courseId,
-      scheduledAt: new Date(scheduledAt),
+      startTime: startTime ?? null,
+      endTime: endTime ?? null,
       duration,
       type: type === "batch" ? "BATCH" : "ONE_TO_ONE",
       students: studentIds.length ? { connect: studentIds.map((id) => ({ id })) } : undefined,

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
 import { IconArrowLeft } from "@/lib/icons";
 import { http, getMe } from "@/lib/api";
 import JitsiEmbed from "@/components/live/jitsi-embed";
@@ -10,6 +9,8 @@ import JitsiEmbed from "@/components/live/jitsi-embed";
 interface Session {
   id: string;
   title: string;
+  startTime: string;
+  endTime: string;
   status: string;
   joinUrl: string;
 }
@@ -30,12 +31,16 @@ export default function StartLiveClass() {
         <button
           onClick={() => router.push("/teacher/live")}
           className="text-on-surface-variant hover:text-primary transition-colors"
-          aria-label="Back to live classes"
+          aria-label="Back to online classes"
         >
           <IconArrowLeft size={20} />
         </button>
-        <h1 className="font-headline-md text-sm text-primary truncate">{session?.title ?? "Live class"}</h1>
-        {session && <Badge variant="success" size="sm">{session.status}</Badge>}
+        <h1 className="font-headline-md text-sm text-primary truncate">{session?.title ?? "Online class"}</h1>
+        {session?.startTime && session?.endTime && (
+          <span className="text-body-sm text-on-surface-variant">
+            {session.startTime} – {session.endTime}
+          </span>
+        )}
       </header>
       <main className="flex-1 overflow-hidden">
         {session?.joinUrl ? (

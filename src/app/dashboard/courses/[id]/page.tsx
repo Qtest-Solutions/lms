@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { ProgressBar } from "@/components/ui/progress-bar";
-import { IconArrowLeft, IconPlay, IconListChecks, IconFileText, IconCheckCircle, IconHelpCircle, IconFileCheck, IconTrophy, IconClipboardCheck, IconUpload, IconX } from "@/lib/icons";
+import { IconArrowLeft, IconPlay, IconListChecks, IconFileText, IconImage, IconBookOpen, IconCheckCircle, IconHelpCircle, IconFileCheck, IconTrophy, IconClipboardCheck, IconUpload, IconX } from "@/lib/icons";
 import { http, getMe, uploadFile } from "@/lib/api";
 import { useToast } from "@/lib/toast-context";
 import { errMessage } from "@/lib/utils";
@@ -44,6 +44,8 @@ interface LeaderboardEntry {
 const typeConfig: Record<string, { icon: typeof IconFileText; container: string; badge: "soft" | "info" | "secondary"; label: string; hint: string }> = {
   text: { icon: IconListChecks, container: "bg-primary/5", badge: "soft", label: "Reading", hint: "Read the lesson to progress" },
   video: { icon: IconPlay, container: "bg-sky-tint/30", badge: "info", label: "Video", hint: "Watch the video lesson" },
+  image: { icon: IconImage, container: "bg-primary/5", badge: "info", label: "Image", hint: "View the image and study the content" },
+  mixed: { icon: IconBookOpen, container: "bg-primary/5", badge: "soft", label: "Lesson", hint: "Mixed content — video, image, and text" },
   assignment: { icon: IconClipboardCheck, container: "bg-secondary-container text-on-secondary-container", badge: "secondary", label: "Assignment", hint: "Task — submit your work below" },
 };
 
