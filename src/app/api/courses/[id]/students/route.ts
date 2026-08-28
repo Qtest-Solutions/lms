@@ -19,7 +19,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 
   let batch = await prisma.batch.findFirst({ where: { courseId: id } });
   if (!batch) {
-    batch = await prisma.batch.create({ data: { name: "Default", courseId: id, teacherId: "" } });
+    const admin = await prisma.user.findFirst({ where: { role: "ADMIN" } });
+    batch = await prisma.batch.create({ data: { name: "Default", courseId: id, teacherId: admin?.id ?? "" } });
   }
 
   await prisma.batch.update({

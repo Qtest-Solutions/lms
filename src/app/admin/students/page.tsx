@@ -43,6 +43,10 @@ export default function AdminStudents() {
   useEffect(() => { void load(); }, []);
 
   const create = async () => {
+    if (!newStudent.name.trim() || !newStudent.email.trim()) {
+      toast.error("Name and email are required");
+      return;
+    }
     try {
       await http.post("/students", newStudent);
       toast.success("Student created");
@@ -60,6 +64,10 @@ export default function AdminStudents() {
 
   const saveEdit = async () => {
     if (!editing) return;
+    if (!editForm.name.trim() || !editForm.email.trim()) {
+      toast.error("Name and email are required");
+      return;
+    }
     try {
       await http.put(`/students/${editing.id}`, editForm);
       toast.success("Student updated");
@@ -143,7 +151,7 @@ export default function AdminStudents() {
           <div className="flex flex-col sm:flex-row gap-2">
             <Input value={newStudent.name} onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })} placeholder="Full name" />
             <Input value={newStudent.email} onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })} placeholder="Email" />
-            <Button className="sm:w-auto" onClick={create}>Add</Button>
+            <Button className="sm:w-auto" onClick={create} disabled={!newStudent.name.trim() || !newStudent.email.trim()}>Add</Button>
           </div>
         </Card>
 
