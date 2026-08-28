@@ -4,41 +4,16 @@ const prisma = new PrismaClient();
 
 async function main() {
   const admin = await prisma.user.upsert({
-    where: { email: "admin@lms.test" },
+    where: { email: "admin@qtestsolutions.com" },
     update: {},
     create: {
-      email: "admin@lms.test",
-      password: "$2a$10$mstOM9itMg7iooy7qFsgBO8gwE5dtnOwUcW8f0Oltry6Y7TOis48e",
+      email: "admin@qtestsolutions.com",
+      password: "$2a$10$FGaQhFzMJGHfVFsLQnJhluCiVjX1sYPnHNwM.EGaNKY.8Z3OoSBPi",
       name: "System Admin",
       role: "ADMIN",
     },
   });
   console.log("admin", admin.id);
-
-  const teacher = await prisma.user.upsert({
-    where: { email: "teacher@lms.test" },
-    update: {},
-    create: {
-      email: "teacher@lms.test",
-      password: "$2a$10$y0RXw2lpmmiKa.peLCA9XemRJXL0Yvewrxm2haqWPlykgn6sxkADS",
-      name: "Dr. Ahmed Khan",
-      role: "TEACHER",
-    },
-  });
-  console.log("teacher", teacher.id);
-
-  const student = await prisma.user.upsert({
-    where: { email: "student@lms.test" },
-    update: { assignedTeacherId: teacher.id },
-    create: {
-      email: "student@lms.test",
-      password: "$2a$10$GSF42JwsSy6RVnHUK.hiIO340PjKXS317xUHflr02erUmxJWRzDVK",
-      name: "Maya Patel",
-      role: "STUDENT",
-      assignedTeacherId: teacher.id,
-    },
-  });
-  console.log("student", student.id);
 
   const course = await prisma.course.upsert({
     where: { code: "QA-101" },
@@ -216,7 +191,7 @@ async function main() {
     update: {},
     create: {
       name: "QA-101 Cohort",
-      teacherId: teacher.id,
+      teacherId: admin.id,
       courseId: course.id,
     },
   });
@@ -229,7 +204,7 @@ async function main() {
       description:
         "Using equivalence partitioning and boundary value analysis, design test cases for an age input field that accepts values from 18 to 60. Submit your test case table.",
       points: 10,
-      createdBy: teacher.id,
+      createdBy: admin.id,
     },
   });
   console.log("assignment", assignment.id);
@@ -280,21 +255,6 @@ async function main() {
     },
   });
   console.log("templates", modern.id, classic.id);
-
-  const existingCert = await prisma.certificate.findFirst({
-    where: { studentId: student.id, courseId: course.id },
-  });
-  if (!existingCert) {
-    await prisma.certificate.create({
-      data: {
-        studentId: student.id,
-        courseId: course.id,
-        templateId: modern.id,
-        publicId: "CERT-" + Math.floor(100000 + Math.random() * 899999),
-      },
-    });
-    console.log("certificate created");
-  }
 }
 
 main()

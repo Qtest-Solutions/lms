@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { ProgressBar } from "@/components/ui/progress-bar";
-import { IconCalendar, IconBookOpen, IconChevronRight, IconPlay, IconAward } from "@/lib/icons";
+import { IconCalendar, IconBookOpen, IconChevronRight, IconAward } from "@/lib/icons";
 import { http, getMe } from "@/lib/api";
 
 interface Course {
@@ -28,24 +28,18 @@ interface Session {
   id: string;
   title: string;
   scheduledAt: string;
+  startTime: string;
+  endTime: string;
   status: string;
   type: string;
   joinUrl: string;
   course?: Course;
 }
 
-interface Recording {
-  id: string;
-  title: string;
-  url: string;
-  duration: number;
-}
-
 export default function StudentDashboard() {
   const me = getMe();
   const [courses, setCourses] = useState<Course[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
-  const [recordings, setRecordings] = useState<Recording[]>([]);
   const [progress, setProgress] = useState<Record<string, CourseProgress>>({});
   const [loading, setLoading] = useState(true);
 
@@ -54,7 +48,6 @@ export default function StudentDashboard() {
     const jobs: Promise<void>[] = [
       http.get<Course[]>(studentId ? `/courses?studentId=${studentId}` : "/courses").then(setCourses),
       http.get<Session[]>("/live-sessions").then((s) => setSessions(s.filter((x) => x.status === "SCHEDULED" || x.status === "ACTIVE"))),
-      http.get<Recording[]>("/recordings").then(setRecordings),
     ];
     if (studentId) {
       jobs.push(
@@ -67,7 +60,6 @@ export default function StudentDashboard() {
   }, []);
 
   const upcoming = sessions[0];
-  const nextRecording = recordings[0];
 
   return (
     <StudentShell>
@@ -93,11 +85,6 @@ export default function StudentDashboard() {
                 <p className="font-headline-md text-leaf-green">{sessions.length}</p>
                 <p className="font-label-caps text-on-surface-variant">Live classes</p>
               </div>
-              <div className="w-px h-12 bg-outline-variant/40" />
-              <div className="text-center">
-                <p className="font-headline-md text-secondary">{recordings.length}</p>
-                <p className="font-label-caps text-on-surface-variant">Recordings</p>
-              </div>
             </div>
           </div>
         </div>
@@ -117,13 +104,13 @@ export default function StudentDashboard() {
                     <Badge variant="success" size="sm" className="mb-1.5">Upcoming class</Badge>
                     <h3 className="font-headline-md text-sm text-primary">{upcoming.title}</h3>
                     <p className="text-body-sm text-on-surface-variant">
-                      {new Date(upcoming.scheduledAt).toLocaleString()} · {upcoming.type}
+                      {upcoming.startTime && upcoming.endTime ? `${upcoming.startTime} – ${upcoming.endTime}` : "No time set"} · {upcoming.type}
                     </p>
                   </div>
                 </div>
-                <a href={upcoming.joinUrl} target="_blank" rel="noreferrer">
+                <Link href={`/dashboard/live/${upcoming.id}`}>
                   <Button size="lg">Join class</Button>
-                </a>
+                </Link>
               </div>
             ) : (
               <div className="flowmark-card flex items-center justify-between">
@@ -172,30 +159,6 @@ export default function StudentDashboard() {
                     </Link>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {/* Recent recording */}
-            {nextRecording && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="font-headline-md text-primary">Recent recording</h2>
-                  <Link href="/dashboard/recordings" className="text-body-sm font-semibold text-primary hover:underline flex items-center gap-1">
-                    All recordings <IconChevronRight size={14} />
-                  </Link>
-                </div>
-                <Card className="flex items-center gap-4 hover:shadow-card-hover transition-shadow duration-200">
-                  <div className="w-12 h-12 rounded-[var(--radius-lg)] bg-surface-container flex items-center justify-center shrink-0 text-primary">
-                    <IconPlay size={20} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-on-surface text-sm truncate">{nextRecording.title}</h3>
-                    <p className="text-xs text-on-surface-variant">{Math.round(nextRecording.duration / 60)} min session</p>
-                  </div>
-                  <a href={nextRecording.url} target="_blank" rel="noreferrer">
-                    <Button variant="secondary" size="sm">Watch</Button>
-                  </a>
-                </Card>
               </div>
             )}
 

@@ -11,8 +11,18 @@ const hankenGrotesk = Hanken_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "LMS - Learning Management System",
-  description: "Custom LMS for 1-to-1 and small batch teaching",
+  title: "QTest Solutions Academy — Learn. Test. Build Your Career.",
+  description: "Practical software testing education built on real QA expertise. Learn manual testing, automation, and quality assurance from industry professionals.",
+  icons: {
+    icon: "/qtest.png",
+  },
+  openGraph: {
+    title: "QTest Solutions Academy — Learn. Test. Build Your Career.",
+    description: "Practical software testing education built on real QA expertise. Learn manual testing, automation, and quality assurance from industry professionals.",
+    images: ["/qtest.png"],
+    type: "website",
+  },
+  metadataBase: new URL("https://academy.qtestsolutions.com"),
 };
 
 const themeScript = `

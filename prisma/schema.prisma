@@ -235,3 +235,20 @@ model AssignmentSubmission {
 
   @@unique([assignmentId, studentId])
 }
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model RegistrationRequest {
+  id        String        @id @default(uuid())
+  name      String
+  email     String
+  phone     String?
+  message   String?
+  status    RequestStatus @default(PENDING)
+  createdAt DateTime      @default(now())
+  reviewedAt DateTime?
+}

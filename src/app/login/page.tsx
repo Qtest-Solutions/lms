@@ -11,8 +11,8 @@ import { IconZap } from "@/lib/icons";
 function LoginForm() {
   const router = useRouter();
   const search = useSearchParams();
-  const [email, setEmail] = useState("student@lms.test");
-  const [password, setPassword] = useState("password");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -36,11 +36,8 @@ function LoginForm() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
-        <div className="flex items-center justify-center gap-2.5 mb-10">
-          <div className="w-10 h-10 rounded-[var(--radius-md)] bg-primary flex items-center justify-center">
-            <IconZap size={20} className="text-on-primary" />
-          </div>
-          <span className="font-headline-md text-primary">LMS</span>
+        <div className="flex items-center justify-center mb-10">
+          <img src="/qtest.png" alt="QTest Solutions" className="h-20 w-20 rounded-[var(--radius-md)] object-cover" />
         </div>
 
         <div className="flowmark-card">
@@ -89,10 +86,13 @@ function LoginForm() {
           </form>
         </div>
 
-        <div className="mt-6 flowmark-card-glass p-4 text-body-sm text-on-surface-variant">
-          <p className="font-semibold mb-1">Demo accounts</p>
-          <p>student@lms.test · teacher@lms.test · admin@lms.test</p>
-          <p className="mt-0.5">All use password: <span className="font-mono">password</span></p>
+        <div className="mt-6 flowmark-card-glass p-4 text-body-sm text-on-surface-variant text-center">
+          <p className="mb-1">
+            Don&apos;t have an account?{" "}
+            <Link href="/register" className="text-academy-teal font-semibold hover:underline">
+              Request enrollment
+            </Link>
+          </p>
           <Link href="/" className="inline-flex items-center gap-1 text-primary font-semibold mt-2 hover:underline">
             Back to home
           </Link>

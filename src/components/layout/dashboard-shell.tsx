@@ -70,7 +70,6 @@ const SHELLS: Record<string, ShellConfig> = {
           { href: "/dashboard", label: "Dashboard", icon: IconHome },
           { href: "/dashboard/courses", label: "My Courses", icon: IconBookOpen },
           { href: "/dashboard/live", label: "Online Classes", icon: IconCalendar },
-          { href: "/dashboard/recordings", label: "Recordings", icon: IconVideo },
           { href: "/dashboard/certificates", label: "Certificates", icon: IconAward },
         ],
       },
@@ -110,6 +109,7 @@ const SHELLS: Record<string, ShellConfig> = {
         label: "People",
         items: [
           { href: "/admin", label: "Dashboard", icon: IconHome },
+          { href: "/admin/registrations", label: "Registrations", icon: IconUserPlus },
           { href: "/admin/students", label: "Students", icon: IconUsers },
           { href: "/admin/teachers", label: "Teachers", icon: IconUser },
           { href: "/admin/assignments", label: "Assignments", icon: IconUserCheck },
@@ -146,13 +146,9 @@ function useIsActive(pathname: string, href: string): boolean {
 }
 
 function Brand({ config, small = false }: { config: ShellConfig; small?: boolean }) {
-  const tone = config.tone === "secondary" ? "bg-secondary" : "bg-primary";
   return (
-    <Link href={`/${config.role}`} className="flex items-center gap-2.5">
-      <div className={`${small ? "w-8 h-8" : "w-9 h-9"} rounded-[var(--radius-md)] ${tone} flex items-center justify-center`}>
-        <IconZap size={small ? 16 : 18} className="text-on-primary" />
-      </div>
-      <span className="font-headline-md text-primary">{config.brand}</span>
+    <Link href={`/${config.role}`} className="flex items-center">
+      <img src="/qtest.png" alt="QTest Solutions" className={`${small ? "h-12 w-12" : "h-20 w-20"} rounded-[var(--radius-md)] object-cover`} />
     </Link>
   );
 }
