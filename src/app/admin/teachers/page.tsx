@@ -11,7 +11,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { IconUserPlus, IconEdit2 as IconEdit, IconTrash2 as IconTrash } from "@/lib/icons";
 import { http } from "@/lib/api";
 import { useToast } from "@/lib/toast-context";
-import { errMessage } from "@/lib/utils";
+import { errMessage, isValidEmail } from "@/lib/utils";
 
 interface Teacher {
   id: string;
@@ -36,6 +36,10 @@ export default function AdminTeachers() {
       toast.error("Name and email are required");
       return;
     }
+    if (!isValidEmail(newTeacher.email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
     try {
       await http.post("/teachers", newTeacher);
       toast.success("Teacher created");
@@ -55,6 +59,10 @@ export default function AdminTeachers() {
     if (!editing) return;
     if (!editForm.name.trim() || !editForm.email.trim()) {
       toast.error("Name and email are required");
+      return;
+    }
+    if (!isValidEmail(editForm.email)) {
+      toast.error("Please enter a valid email address");
       return;
     }
     try {
@@ -96,8 +104,8 @@ export default function AdminTeachers() {
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
             <Input value={newTeacher.name} onChange={(e) => setNewTeacher({ ...newTeacher, name: e.target.value })} placeholder="Full name" />
-            <Input value={newTeacher.email} onChange={(e) => setNewTeacher({ ...newTeacher, email: e.target.value })} placeholder="Email" />
-            <Button className="sm:w-auto" onClick={create} disabled={!newTeacher.name.trim() || !newTeacher.email.trim()}>Add</Button>
+            <Input type="email" value={newTeacher.email} onChange={(e) => setNewTeacher({ ...newTeacher, email: e.target.value })} placeholder="Email" />
+            <Button className="sm:w-auto" onClick={create} disabled={!newTeacher.name.trim() || !isValidEmail(newTeacher.email)}>Add</Button>
           </div>
         </Card>
 

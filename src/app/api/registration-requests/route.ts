@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { isValidEmail } from "@/lib/utils";
 
 export async function GET() {
   const requests = await prisma.registrationRequest.findMany({
@@ -14,6 +15,10 @@ export async function POST(req: Request) {
 
   if (!name || !email) {
     return NextResponse.json({ message: "Name and email are required" }, { status: 400 });
+  }
+
+  if (!isValidEmail(email)) {
+    return NextResponse.json({ message: "A valid email address is required" }, { status: 400 });
   }
 
   const existing = await prisma.registrationRequest.findFirst({
