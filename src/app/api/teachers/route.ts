@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
+import { isValidName } from "@/lib/utils";
 
 async function teacherDetails(teacherId: string) {
   const [teacher, batches, sessions] = await Promise.all([
@@ -43,9 +44,15 @@ export async function GET() {
 export async function POST(req: Request) {
   const body = await req.json();
   const { email, password, name } = body ?? {};
+  if (!isValidName(name ?? "")) {
+    return NextResponse.json(
+      { message: "Name can only contain letters, spaces, hyphens, and apostrophes" },
+      { status: 400 }
+    );
+  }
   const hash = await bcrypt.hash(password, 10);
   const teacher = await prisma.user.create({
-    data: { email, password: hash, name, role: "TEACHER" },
+    data: { email, password: hash, name: name.trim(), role: "TEACHER" },
   });
   return NextResponse.json(teacher);
 }

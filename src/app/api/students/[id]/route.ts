@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { isValidName } from "@/lib/utils";
 
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
@@ -14,6 +15,15 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
 export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
   const body = await req.json();
+  if (body?.name !== undefined) {
+    if (!isValidName(body.name)) {
+      return NextResponse.json(
+        { message: "Name can only contain letters, spaces, hyphens, and apostrophes" },
+        { status: 400 }
+      );
+    }
+    body.name = body.name.trim();
+  }
   const student = await prisma.user.update({ where: { id }, data: body });
   return NextResponse.json(student);
 }

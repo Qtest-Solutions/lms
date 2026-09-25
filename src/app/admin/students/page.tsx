@@ -11,7 +11,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { IconUserPlus, IconEdit2 as IconEdit, IconTrash2 as IconTrash, IconBookOpen, IconX } from "@/lib/icons";
 import { http } from "@/lib/api";
 import { useToast } from "@/lib/toast-context";
-import { errMessage } from "@/lib/utils";
+import { errMessage, isValidName } from "@/lib/utils";
 
 interface Student {
   id: string;
@@ -47,6 +47,10 @@ export default function AdminStudents() {
       toast.error("Name and email are required");
       return;
     }
+    if (!isValidName(newStudent.name)) {
+      toast.error("Name can only contain letters, spaces, hyphens, and apostrophes");
+      return;
+    }
     try {
       await http.post("/students", newStudent);
       toast.success("Student created");
@@ -66,6 +70,10 @@ export default function AdminStudents() {
     if (!editing) return;
     if (!editForm.name.trim() || !editForm.email.trim()) {
       toast.error("Name and email are required");
+      return;
+    }
+    if (!isValidName(editForm.name)) {
+      toast.error("Name can only contain letters, spaces, hyphens, and apostrophes");
       return;
     }
     try {
@@ -151,7 +159,7 @@ export default function AdminStudents() {
           <div className="flex flex-col sm:flex-row gap-2">
             <Input value={newStudent.name} onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })} placeholder="Full name" />
             <Input value={newStudent.email} onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })} placeholder="Email" />
-            <Button className="sm:w-auto" onClick={create} disabled={!newStudent.name.trim() || !newStudent.email.trim()}>Add</Button>
+            <Button className="sm:w-auto" onClick={create} disabled={!isValidName(newStudent.name) || !newStudent.email.trim()}>Add</Button>
           </div>
         </Card>
 
