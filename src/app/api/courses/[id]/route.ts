@@ -14,6 +14,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
 export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
   const body = await req.json();
+  if (("title" in body && !body.title?.trim()) || ("code" in body && !body.code?.trim())) {
+    return NextResponse.json({ message: "Title and code are required" }, { status: 400 });
+  }
   const course = await prisma.course.update({ where: { id }, data: body });
   return NextResponse.json(course);
 }

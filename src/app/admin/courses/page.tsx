@@ -33,6 +33,10 @@ export default function AdminCourses() {
   useEffect(() => { void load(); }, []);
 
   const create = async () => {
+    if (!form.title.trim() || !form.code.trim()) {
+      toast.error("Title and code are required");
+      return;
+    }
     try {
       await http.post("/courses", form);
       toast.success("Course created");
@@ -50,6 +54,10 @@ export default function AdminCourses() {
 
   const saveEdit = async () => {
     if (!editing) return;
+    if (!editForm.title.trim() || !editForm.code.trim()) {
+      toast.error("Title and code are required");
+      return;
+    }
     try {
       await http.put(`/courses/${editing.id}`, editForm);
       toast.success("Course updated");
@@ -99,7 +107,7 @@ export default function AdminCourses() {
               rows={2}
               className="w-full px-4 py-2.5 bg-surface-container-low text-on-surface rounded-[var(--radius-lg)] border border-outline-variant outline-none transition-all duration-200 placeholder:text-on-surface-variant/50 focus:border-primary focus:ring-1 focus:ring-primary text-body-sm resize-none"
             />
-            <Button onClick={create}>Create course</Button>
+            <Button onClick={create} disabled={!form.title.trim() || !form.code.trim()}>Create course</Button>
           </div>
         </Card>
 
@@ -147,7 +155,7 @@ export default function AdminCourses() {
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
-            <Button onClick={saveEdit}>Save changes</Button>
+            <Button onClick={saveEdit} disabled={!editForm.title.trim() || !editForm.code.trim()}>Save changes</Button>
           </div>
         </div>
       </Modal>
