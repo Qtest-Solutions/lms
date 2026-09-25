@@ -76,6 +76,8 @@ model Section {
   title    String
   course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   lessons  Lesson[]
+
+  @@index([courseId])
 }
 
 model Lesson {
@@ -86,6 +88,8 @@ model Lesson {
   content   String
   section   Section @relation(fields: [sectionId], references: [id], onDelete: Cascade)
   progress  LessonProgress[]
+
+  @@index([sectionId])
 }
 
 model Batch {
@@ -186,6 +190,8 @@ model Question {
   createdAt    DateTime @default(now())
 
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
 }
 
 model QuizAttempt {
