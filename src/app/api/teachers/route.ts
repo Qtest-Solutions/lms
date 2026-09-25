@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
-import { isValidName } from "@/lib/utils";
+import { isValidEmail, isValidName } from "@/lib/utils";
 
 async function teacherDetails(teacherId: string) {
   const [teacher, batches, sessions] = await Promise.all([
@@ -49,6 +49,9 @@ export async function POST(req: Request) {
       { message: "Name can only contain letters, spaces, hyphens, and apostrophes" },
       { status: 400 }
     );
+  }
+  if (!isValidEmail(email ?? "")) {
+    return NextResponse.json({ message: "A valid email address is required" }, { status: 400 });
   }
   const hash = await bcrypt.hash(password, 10);
   const teacher = await prisma.user.create({

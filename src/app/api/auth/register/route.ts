@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { Prisma, prisma } from "@/lib/db";
 import { signToken } from "@/lib/auth";
+import { isValidEmail } from "@/lib/utils";
 
 export async function POST(req: Request) {
   const body = await req.json();
@@ -9,6 +10,10 @@ export async function POST(req: Request) {
 
   if (!email || !inputPassword || !name) {
     return NextResponse.json({ message: "Email, password and name are required" }, { status: 400 });
+  }
+
+  if (!isValidEmail(email)) {
+    return NextResponse.json({ message: "A valid email address is required" }, { status: 400 });
   }
 
   const existing = await prisma.user.findUnique({ where: { email } });

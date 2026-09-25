@@ -12,3 +12,9 @@ export function isValidName(name: string): boolean {
   const trimmed = name.trim();
   return trimmed.length > 0 && NAME_PATTERN.test(trimmed);
 }
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function isValidEmail(email: string): boolean {
+  return EMAIL_REGEX.test(email.trim());
+}

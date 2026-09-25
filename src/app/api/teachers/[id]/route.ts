@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { isValidName } from "@/lib/utils";
+import { isValidEmail, isValidName } from "@/lib/utils";
 
 async function teacherDetails(teacherId: string) {
   const [teacher, batches, sessions] = await Promise.all([
@@ -52,6 +52,9 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
       );
     }
     body.name = body.name.trim();
+  }
+  if (body?.email !== undefined && !isValidEmail(body.email ?? "")) {
+    return NextResponse.json({ message: "A valid email address is required" }, { status: 400 });
   }
   const teacher = await prisma.user.update({ where: { id }, data: body });
   return NextResponse.json(teacher);

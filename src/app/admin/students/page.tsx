@@ -11,7 +11,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { IconUserPlus, IconEdit2 as IconEdit, IconTrash2 as IconTrash, IconBookOpen, IconX } from "@/lib/icons";
 import { http } from "@/lib/api";
 import { useToast } from "@/lib/toast-context";
-import { errMessage, isValidName } from "@/lib/utils";
+import { errMessage, isValidEmail, isValidName } from "@/lib/utils";
 
 interface Student {
   id: string;
@@ -51,6 +51,10 @@ export default function AdminStudents() {
       toast.error("Name can only contain letters, spaces, hyphens, and apostrophes");
       return;
     }
+    if (!isValidEmail(newStudent.email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
     try {
       await http.post("/students", newStudent);
       toast.success("Student created");
@@ -74,6 +78,10 @@ export default function AdminStudents() {
     }
     if (!isValidName(editForm.name)) {
       toast.error("Name can only contain letters, spaces, hyphens, and apostrophes");
+      return;
+    }
+    if (!isValidEmail(editForm.email)) {
+      toast.error("Please enter a valid email address");
       return;
     }
     try {
@@ -158,8 +166,8 @@ export default function AdminStudents() {
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
             <Input value={newStudent.name} onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })} placeholder="Full name" />
-            <Input value={newStudent.email} onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })} placeholder="Email" />
-            <Button className="sm:w-auto" onClick={create} disabled={!isValidName(newStudent.name) || !newStudent.email.trim()}>Add</Button>
+            <Input type="email" value={newStudent.email} onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })} placeholder="Email" />
+            <Button className="sm:w-auto" onClick={create} disabled={!isValidName(newStudent.name) || !isValidEmail(newStudent.email)}>Add</Button>
           </div>
         </Card>
 
