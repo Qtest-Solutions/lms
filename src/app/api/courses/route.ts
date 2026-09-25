@@ -1,19 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-
-const CACHE_KEY = "courses:all";
-const TTL = 60;
-const cache: Record<string, { data: unknown; expires: number }> = {};
+import { getCachedCourses, setCachedCourses, invalidateCoursesCache } from "@/lib/courses-cache";
 
 function withLessonCount<T extends { sections: { lessons: unknown[] }[] }>(courses: T[]) {
   return courses.map((c) => ({
     ...c,
     lessonCount: c.sections.reduce((n: number, s: { lessons: unknown[] }) => n + s.lessons.length, 0),
   }));
-}
-
-function invalidateCache() {
-  delete cache[CACHE_KEY];
 }
 
 export async function GET(req: Request) {
@@ -80,16 +73,16 @@ export async function GET(req: Request) {
     return NextResponse.json(result);
   }
 
-  const hit = cache[CACHE_KEY];
-  if (hit && hit.expires > Date.now()) {
-    return NextResponse.json(hit.data);
+  const hit = getCachedCourses<unknown>();
+  if (hit !== undefined) {
+    return NextResponse.json(hit);
   }
 
   const courses = await prisma.course.findMany({
     include: { sections: { include: { lessons: true } } },
   });
   const result = withLessonCount(courses);
-  cache[CACHE_KEY] = { data: result, expires: Date.now() + TTL * 1000 };
+  setCachedCourses(result);
   return NextResponse.json(result);
 }
 
@@ -100,6 +93,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: "Title and code are required" }, { status: 400 });
   }
   const course = await prisma.course.create({ data: { title, description, code } });
-  invalidateCache();
+  invalidateCoursesCache();
   return NextResponse.json(course);
 }
