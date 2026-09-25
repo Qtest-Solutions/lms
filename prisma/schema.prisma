@@ -76,6 +76,8 @@ model Section {
   title    String
   course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   lessons  Lesson[]
+
+  @@index([courseId])
 }
 
 model Lesson {
@@ -86,6 +88,8 @@ model Lesson {
   content   String
   section   Section @relation(fields: [sectionId], references: [id], onDelete: Cascade)
   progress  LessonProgress[]
+
+  @@index([sectionId])
 }
 
 model Batch {
@@ -98,6 +102,8 @@ model Batch {
   students  User[]   @relation("BatchStudents")
 
   sessions LiveSession[]
+
+  @@index([courseId])
 }
 
 model LiveSession {
@@ -118,6 +124,9 @@ model LiveSession {
   course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   students  User[]   @relation("SessionStudents")
   recording Recording?
+
+  @@index([courseId])
+  @@index([batchId])
 }
 
 model Recording {
@@ -143,6 +152,8 @@ model Certificate {
   student  User                 @relation(fields: [studentId], references: [id])
   course   Course               @relation(fields: [courseId], references: [id], onDelete: Cascade)
   template CertificateTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  @@index([courseId])
 }
 
 model CertificateTemplate {
@@ -173,6 +184,7 @@ model LessonProgress {
   lesson  Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, lessonId])
+  @@index([lessonId])
 }
 
 model Question {
@@ -186,6 +198,8 @@ model Question {
   createdAt    DateTime @default(now())
 
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
 }
 
 model QuizAttempt {
@@ -199,6 +213,8 @@ model QuizAttempt {
 
   student User   @relation("StudentQuizAttempts", fields: [studentId], references: [id], onDelete: Cascade)
   course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
 }
 
 model Assignment {
@@ -214,6 +230,8 @@ model Assignment {
   course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
   creator     User      @relation("AssignmentCreator", fields: [createdBy], references: [id])
   submissions AssignmentSubmission[]
+
+  @@index([courseId])
 }
 
 model AssignmentSubmission {
