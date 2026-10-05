@@ -19,6 +19,7 @@ export default function ProfilePage() {
   const me = getMe();
   const [form, setForm] = useState({ name: me?.name ?? "", email: me?.email ?? "" });
   const [saved, setSaved] = useState(false);
+  const [pw, setPw] = useState({ current: "", next: "", confirm: "" });
 
   useEffect(() => {
     if (!me) router.replace("/login");
@@ -28,11 +29,23 @@ export default function ProfilePage() {
 
   const save = async () => {
     try {
-      const updated = await http.put<AuthUser>(`/users/${me.id}`, { name: form.name, email: form.email });
+      const updated = await http.put<AuthUser>("/auth/profile", { name: form.name, email: form.email });
       saveMe({ ...me, name: updated.name, email: updated.email });
       setSaved(true);
       toast.success("Profile updated");
       setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      toast.error(errMessage(err));
+    }
+  };
+
+  const changePassword = async () => {
+    if (pw.next.length < 6) return toast.error("New password must be at least 6 characters");
+    if (pw.next !== pw.confirm) return toast.error("Passwords do not match");
+    try {
+      await http.put("/auth/profile", { currentPassword: pw.current, newPassword: pw.next });
+      setPw({ current: "", next: "", confirm: "" });
+      toast.success("Password updated");
     } catch (err) {
       toast.error(errMessage(err));
     }
@@ -115,6 +128,16 @@ export default function ProfilePage() {
             </div>
           </Card>
         </div>
+
+        <Card className="p-6">
+          <h3 className="font-headline-md text-sm text-primary mb-4">Change password</h3>
+          <div className="space-y-4">
+            <Input label="Current password" type="password" value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} />
+            <Input label="New password" type="password" value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} />
+            <Input label="Confirm new password" type="password" value={pw.confirm} onChange={(e) => setPw({ ...pw, confirm: e.target.value })} />
+            <Button onClick={changePassword} disabled={!pw.current || !pw.next}>Update password</Button>
+          </div>
+        </Card>
 
         <Card className="p-6 flex items-center justify-between bg-surface-off-white/60">
           <div>
