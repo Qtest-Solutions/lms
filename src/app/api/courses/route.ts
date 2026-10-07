@@ -89,8 +89,8 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const body = await req.json();
   const { title, description, code } = body ?? {};
-  if (!title?.trim() || !code?.trim()) {
-    return NextResponse.json({ message: "Title and code are required" }, { status: 400 });
+  if (!title?.trim() || !code?.trim() || !description?.trim()) {
+    return NextResponse.json({ message: "Title, code and description are required" }, { status: 400 });
   }
   const course = await prisma.course.create({ data: { title, description, code } });
   invalidateCoursesCache();
