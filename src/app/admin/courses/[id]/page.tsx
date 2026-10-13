@@ -89,16 +89,16 @@ const newBlock = (type: ContentBlock["type"]): ContentBlock => ({ id: `b${++bloc
 const emptyLessonForm: LessonForm = { title: "", isAssignment: false, blocks: [] };
 
 function parseBlocks(content: string, type: string): ContentBlock[] {
-  if (type === "assignment") return [newBlock("text")];
+  if (type === "assignment") return [{ ...newBlock("text"), content }];
   try {
     const parsed = JSON.parse(content);
     if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].type) {
       return parsed.map((b: { type: string; content: string }) => ({ id: `b${++blockId}`, type: b.type as ContentBlock["type"], content: b.content || "" }));
     }
   } catch { /* legacy */ }
-  if (type === "video") return [newBlock("video")];
-  if (type === "image") return [newBlock("image")];
-  return [newBlock("text")];
+  if (type === "video") return [{ ...newBlock("video"), content }];
+  if (type === "image") return [{ ...newBlock("image"), content }];
+  return [{ ...newBlock("text"), content }];
 }
 
 function buildPayload(form: LessonForm): { content: string; type: string } {
